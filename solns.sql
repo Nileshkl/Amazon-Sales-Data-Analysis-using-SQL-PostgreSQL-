@@ -122,8 +122,23 @@ where customer_id not in (select distinct customer_id from orders)
 Identify the least-selling product category for each state.
 Challenge: Include the total sales for that category within each state.
 */
-select * from orders as o
-join 
+	
+with ranking_table as (
+	select c.state,cat.category_name,sum(oi.total_sales) as total_sales,
+	rank() over(partition by c.state order by sum(oi.total_sales)asc) as rnk
+	from orders as o
+join customers as c
+on c.customer_id=o.customer_id
+join order_items as oi
+on o.order_id=oi.order_id
+join products as p
+on oi.product_id=p.product_id
+join category as cat
+on cat.category_id=p.category_id
+group by c.state,cat.category_name)
+	
+select * from ranking_table
+where rnk=1;
 
 /*
 7. Customer Lifetime Value (CLTV)
@@ -131,6 +146,15 @@ Calculate the total value of orders placed by each customer over their lifetime.
 Challenge: Rank customers based on their CLTV.
 */
 
+select c.customer_id,concat(c.first_name,' ',c.last_name) as full_name,
+sum(total_sales) as CLTV,
+dense_rank() over(order by sum(total_sales) desc) as cx_ranking
+from orders as o
+join customers as c
+on c.customer_id=o.customer_id
+join order_items as oi
+on oi.order_id=o.order_id
+group by 1,2
 
 
 /*
@@ -139,7 +163,15 @@ Query products with stock levels below a certain threshold (e.g., less than 10 u
 Challenge: Include last restock date and warehouse information.
 */
 
-
+select i.inventory_id,
+	p.product_name,
+	i.stock as current_stock_left,
+	i.last_stock_date,
+	i.warehouse_id
+	from inventory as i
+join products as p
+on p.product_id=i.product_id
+where i.stock<10
 
 
 /*
@@ -147,14 +179,27 @@ Challenge: Include last restock date and warehouse information.
 Identify orders where the shipping date is later than 3 days after the order date.
 Challenge: Include customer, order details, and delivery provider.
 */
-
-
+	
+select c.*,o.*,s.shipping_providers,s.shipping_date-o.order_date as days_took_to_ship
+from orders as o
+join customers as c
+on c.customer_id=o.customer_id
+join shippings as s
+on o.order_id=s.order_id
+where s.shipping_date-o.order_date>3
 
 /*
 10. Payment Success Rate 
 Calculate the percentage of successful payments across all orders.
 Challenge: Include breakdowns by payment status (e.g., failed, pending).
 */
+
+select p.payment_status,count(*) as total_cnt,
+	count(*)::numeric/(select count(*) from payments)::numeric*100 as payment_percentage
+	from orders as o
+join payments as p
+on o.order_id=p.order_id
+group by 1
 
 
 
@@ -163,6 +208,34 @@ Challenge: Include breakdowns by payment status (e.g., failed, pending).
 Find the top 5 sellers based on total sales value.
 Challenge: Include both successful and failed orders, and display their percentage of successful orders.
 */
+with top_sellers as (
+select s.seller_id,s.seller_name,sum(oi.total_sales) as total_sales from orders as o
+join sellers as s
+on s.seller_id=o.seller_id
+join order_items as oi
+on oi.order_id=o.order_id
+group by 1,2
+order by 3 desc
+limit 5
+),
+	
+seller_reports as(
+select o.seller_id,ts.seller_name,o.order_status,count(*) as total_orders from orders as o
+join 
+top_sellers as ts
+on ts.seller_id=o.seller_id
+where o.order_status not in ('Returned','Inprogress')
+group by 1,2,3
+)
+
+select seller_id,seller_name,
+	sum(case when order_status='Completed' then total_orders else 0 end) as Completed_Orders,
+	sum(case when order_status='Cancelled' then total_orders else 0 end) as Cancelled_Orders,
+	sum(total_orders) as total_orders,
+	sum(case when order_status='Completed' then total_orders else 0 end)::numeric
+	/sum(total_orders)::numeric *100 as successful_order_percentage
+	from seller_reports
+	group by 1,2
 
 
 /*
@@ -170,6 +243,19 @@ Challenge: Include both successful and failed orders, and display their percenta
 Calculate the profit margin for each product (difference between price and cost of goods sold).
 Challenge: Rank products by their profit margin, showing highest to lowest.
 */
+
+select product_id,
+	product_name,
+	profit_margin,
+	dense_rank() over(order by profit_margin desc) as product_ranking
+from 
+	(select p.product_id,p.product_name,
+	sum(total_sales-(p.cogs*oi.quantity))/sum(total_sales)*100 as profit_margin
+	
+from order_items as oi
+join products as p
+on p.product_id=oi.product_id
+group by 1,2) as t1
 
 
 /*
