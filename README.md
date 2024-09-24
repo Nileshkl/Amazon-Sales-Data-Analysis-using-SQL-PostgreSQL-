@@ -745,6 +745,6 @@ By completing this project, I have gained a deeper understanding of how SQL can 
 ---
 
 ### **Entity Relationship Diagram (ERD)**
-![ERD](https://github.com/najirh/amazon_usa_project5/blob/main/erd.png)
+![ERD](https://github.com/Nileshkl/Amazon-Sales-Data-Analysis-using-SQL-PostgreSQL-/blob/f1dea1a1be47b660fcc970670b182760ee368134/erd.png)
 
 ---
