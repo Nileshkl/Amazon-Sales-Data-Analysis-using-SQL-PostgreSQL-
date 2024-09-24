@@ -264,7 +264,17 @@ Query the top 10 products by the number of returns.
 Challenge: Display the return rate as a percentage of total units sold for each product.
 */
 
-
+select p.product_id,p.product_name,count(*) as total_units_sold,
+sum(case when o.order_status='Returned' then 1 else 0 end) as total_returned,
+sum(case when o.order_status='Returned' then 1 else 0 end)::numeric/count(*)::numeric*100 as return_percentage
+from order_items as oi
+join 
+products as p
+on oi.product_id=p.product_id
+join orders as o
+on o.order_id=oi.order_id
+group by 1,2
+order by 5 desc
 
 /*
 14. Orders Pending Shipment
@@ -272,12 +282,36 @@ Find orders that have been paid but are still pending shipment.
 Challenge: Include order details, payment date, and customer information.
 */
 
+select o.order_id,o.order_status,p.payment_date,concat(c.first_name,' ',c.last_name) as full_name from orders as o
+join customers as c
+on c.customer_id=o.customer_id
+join order_items as oi
+on oi.order_id=o.order_id
+join payments as p
+on p.order_id=o.order_id
+where o.order_status='Inprogress'
 
 /*
 15. Inactive Sellers
 Identify sellers who havenâ€™t made any sales in the last 6 months.
 Challenge: Show the last sale date and total sales from those sellers.
 */
+
+with cte1 as-- these sellers has not done any sale last 6 months
+(
+select * from sellers
+where seller_id not in(select seller_id from orders where order_date>=current_date-interval'6 month')
+)
+
+--checking any sells ever done by sellers above
+select o.seller_id, max(o.order_date) as last_sale_date,
+max(oi.total_sales) as last_sale 
+from orders as o
+join cte1
+on cte1.seller_id=o.seller_id
+join order_items as oi
+on o.order_id=oi.order_id
+group by 1
 
 /*
 16. IDENTITY customers into returning or new
