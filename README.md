@@ -1,6 +1,9 @@
 # Amazon Sales Data Analysis SQL (PostgreSQL)
- I analyzed 20,000+ Amazon e-commerce sales records using PostgreSQL, focusing on customer behavior, product performance, sales trends, and data cleaning. An ERD diagram visualizes the database schema.
+![Amazon Sales GIF](https://github.com/Nileshkl/Amazon-Sales-Data-Analysis-using-SQL-PostgreSQL-/raw/eafc27ed225c89c1a333496cb0c0faf9cbc27348/az-ezgif.com-crop.gif)
+ 
+I analyzed 20,000+ Amazon e-commerce sales records using PostgreSQL, focusing on customer behavior, product performance, sales trends, and data cleaning. An ERD diagram visualizes the database schema.
 ---
+
 
 ### **Difficulty Level: Advanced**
 
